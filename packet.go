@@ -38,7 +38,7 @@ type PacketGetter interface {
 	GetHLen() uint8
 	GetXID() []byte
 	GetFlags() []byte
-	GetCHAddr() []byte
+	GetCHAddr() net.HardwareAddr
 
 	GetCIAddr() net.IP
 	GetYIAddr() net.IP
@@ -120,7 +120,7 @@ func (p RawPacket) GetFlags() []byte {
 }
 
 // GetCHAddr gets the client's hardware address.
-func (p RawPacket) GetCHAddr() []byte {
+func (p RawPacket) GetCHAddr() net.HardwareAddr {
 	var out [16]byte
 
 	hlen := p.GetHLen()
@@ -129,7 +129,7 @@ func (p RawPacket) GetCHAddr() []byte {
 	}
 
 	copy(out[:], p.CHAddr()[0:hlen])
-	return out[0:hlen]
+	return net.HardwareAddr(out[0:hlen])
 }
 
 // GetCIAddr gets the current IP address of the client.

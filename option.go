@@ -18,6 +18,7 @@ package dhcpv4
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"net"
 	"reflect"
 	"sort"
@@ -38,6 +39,24 @@ const (
 	MessageTypeRelease  = MessageType(7)
 	MessageTypeInform   = MessageType(8)
 )
+
+var messageTypeStrings = map[MessageType]string{
+	MessageTypeDiscover: "DHCPDISCOVER",
+	MessageTypeOffer:    "DHCPOFFER",
+	MessageTypeRequest:  "DHCPREQUEST",
+	MessageTypeDecline:  "DHCPDECLINE",
+	MessageTypeAck:      "DHCPACK",
+	MessageTypeNak:      "DHCPNAK",
+	MessageTypeRelease:  "DHCPRELEASE",
+	MessageTypeInform:   "DHCPINFORM",
+}
+
+func (t MessageType) String() string {
+	if s, ok := messageTypeStrings[t]; ok {
+		return s
+	}
+	return fmt.Sprintf("DHCP(%d)", t)
+}
 
 // OptionGetter defines a bag of functions that can be used to get options.
 type OptionGetter interface {
