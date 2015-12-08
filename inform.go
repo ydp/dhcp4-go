@@ -15,28 +15,9 @@ limitations under the License.
 */
 package dhcpv4
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
-// Test dispatch to ReplyWriter
-func TestDHCPInformWriteReply(t *testing.T) {
-	rw := &testReplyWriter{}
-
-	req := DHCPInform{
-		Packet:      NewPacket(BootRequest),
-		ReplyWriter: rw,
-	}
-
-	reps := []Reply{
-		CreateDHCPAck(req),
-	}
-
-	for _, rep := range reps {
-		rw.wrote = false
-		req.WriteReply(rep)
-		assert.True(t, rw.wrote)
-	}
+// Inform is a client to server packet, asking only for local configuration
+// parameters; client already has externally configured network address.
+type Inform struct {
+	Packet
+	ReplyWriter
 }

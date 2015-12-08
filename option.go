@@ -29,14 +29,14 @@ import (
 type MessageType byte
 
 const (
-	MessageTypeDHCPDiscover = MessageType(1)
-	MessageTypeDHCPOffer    = MessageType(2)
-	MessageTypeDHCPRequest  = MessageType(3)
-	MessageTypeDHCPDecline  = MessageType(4)
-	MessageTypeDHCPAck      = MessageType(5)
-	MessageTypeDHCPNak      = MessageType(6)
-	MessageTypeDHCPRelease  = MessageType(7)
-	MessageTypeDHCPInform   = MessageType(8)
+	MessageTypeDiscover = MessageType(1)
+	MessageTypeOffer    = MessageType(2)
+	MessageTypeRequest  = MessageType(3)
+	MessageTypeDecline  = MessageType(4)
+	MessageTypeAck      = MessageType(5)
+	MessageTypeNak      = MessageType(6)
+	MessageTypeRelease  = MessageType(7)
+	MessageTypeInform   = MessageType(8)
 )
 
 // OptionGetter defines a bag of functions that can be used to get options.

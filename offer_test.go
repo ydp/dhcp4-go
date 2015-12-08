@@ -17,25 +17,23 @@ package dhcpv4
 
 import "testing"
 
-func TestDHCPNakValidation(t *testing.T) {
+func TestOfferValidation(t *testing.T) {
 	testCase := replyValidationTestCase{
 		newReply: func() ValidatingReply {
-			return &DHCPNak{
+			return &Offer{
 				Packet: NewPacket(BootReply),
-				req:    NewPacket(BootRequest),
+				msg:    NewPacket(BootRequest),
 			}
 		},
 		must: []Option{
+			OptionAddressTime,
 			OptionDHCPServerID,
 		},
 		mustNot: []Option{
 			OptionAddressRequest,
-			OptionAddressTime,
-
-			// Some random options that are not called out explicitly,
-			// to test the deny-by-default policy.
-			OptionPXEUndefined128,
-			OptionPXEUndefined129,
+			OptionParameterList,
+			OptionClientID,
+			OptionDHCPMaxMsgSize,
 		},
 	}
 

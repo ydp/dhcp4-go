@@ -17,14 +17,14 @@ package dhcpv4
 
 import "testing"
 
-func TestDHCPAckOnRequestValidation(t *testing.T) {
+func TestAckOnRequestValidation(t *testing.T) {
 	testCase := replyValidationTestCase{
 		newReply: func() ValidatingReply {
-			req := NewPacket(BootRequest)
-			req.SetMessageType(MessageTypeDHCPRequest)
-			return &DHCPAck{
+			msg := NewPacket(BootRequest)
+			msg.SetMessageType(MessageTypeRequest)
+			return &Ack{
 				Packet: NewPacket(BootReply),
-				req:    req,
+				msg:    msg,
 			}
 		},
 		must: []Option{
@@ -42,14 +42,14 @@ func TestDHCPAckOnRequestValidation(t *testing.T) {
 	testCase.Test(t)
 }
 
-func TestDHCPAckOnInformValidation(t *testing.T) {
+func TestAckOnInformValidation(t *testing.T) {
 	testCase := replyValidationTestCase{
 		newReply: func() ValidatingReply {
-			req := NewPacket(BootRequest)
-			req.SetMessageType(MessageTypeDHCPInform)
-			return &DHCPAck{
+			msg := NewPacket(BootRequest)
+			msg.SetMessageType(MessageTypeInform)
+			return &Ack{
 				Packet: NewPacket(BootReply),
-				req:    req,
+				msg:    msg,
 			}
 		},
 		must: []Option{

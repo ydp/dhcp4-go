@@ -15,9 +15,8 @@ limitations under the License.
 */
 package dhcpv4
 
-// DHCPInform is a client to server packet, asking only for local configuration
-// parameters; client already has externally configured network address.
-type DHCPInform struct {
+// Release is a client to server packet relinquishing network address and
+// cancelling remaining lease.
+type Release struct {
 	Packet
-	ReplyWriter
 }

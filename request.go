@@ -15,8 +15,11 @@ limitations under the License.
 */
 package dhcpv4
 
-// DHCPDecline is a client to server packet indicating network address is
-// already in use.
-type DHCPDecline struct {
+// Request is a client message to servers either (a) requesting offered
+// parameters from one server and implicitly declining offers from all others,
+// (b) confirming correctness of previously allocated address after, e.g.,
+// system reboot, or (c) extending the lease on a particular network address.
+type Request struct {
 	Packet
+	ReplyWriter
 }

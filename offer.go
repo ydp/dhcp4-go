@@ -17,21 +17,21 @@ package dhcpv4
 
 import "encoding/binary"
 
-// DHCPOffer is a server to client packet in response to DHCPDISCOVER with
+// Offer is a server to client packet in response to DHCPDISCOVER with
 // offer of configuration parameters.
-type DHCPOffer struct {
+type Offer struct {
 	Packet
 
-	req Request
+	msg Message
 }
 
-func CreateDHCPOffer(req Request) DHCPOffer {
-	rep := DHCPOffer{
-		Packet: NewReply(req),
-		req:    req,
+func CreateOffer(msg Message) Offer {
+	rep := Offer{
+		Packet: NewReply(msg),
+		msg:    msg,
 	}
 
-	rep.SetMessageType(MessageTypeDHCPOffer)
+	rep.SetMessageType(MessageTypeOffer)
 	return rep
 }
 
@@ -59,21 +59,21 @@ var dhcpOfferValidation = []Validation{
 	ValidateMustNot(OptionDHCPMaxMsgSize),
 }
 
-func (d DHCPOffer) Validate() error {
+func (d Offer) Validate() error {
 	return Validate(d.Packet, dhcpOfferValidation)
 }
 
-func (d DHCPOffer) ToBytes() ([]byte, error) {
+func (d Offer) ToBytes() ([]byte, error) {
 	opts := packetToBytesOptions{}
 
 	// Copy MaxMsgSize if set in the request
-	if v, ok := d.Request().GetOption(OptionDHCPMaxMsgSize); ok {
+	if v, ok := d.Message().GetOption(OptionDHCPMaxMsgSize); ok {
 		opts.maxLen = binary.BigEndian.Uint16(v)
 	}
 
 	return PacketToBytes(d.Packet, &opts)
 }
 
-func (d DHCPOffer) Request() Request {
-	return d.req
+func (d Offer) Message() Message {
+	return d.msg
 }

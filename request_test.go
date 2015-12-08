@@ -15,27 +15,29 @@ limitations under the License.
 */
 package dhcpv4
 
-import "testing"
+import (
+	"testing"
 
-func TestDHCPOfferValidation(t *testing.T) {
-	testCase := replyValidationTestCase{
-		newReply: func() ValidatingReply {
-			return &DHCPOffer{
-				Packet: NewPacket(BootReply),
-				req:    NewPacket(BootRequest),
-			}
-		},
-		must: []Option{
-			OptionAddressTime,
-			OptionDHCPServerID,
-		},
-		mustNot: []Option{
-			OptionAddressRequest,
-			OptionParameterList,
-			OptionClientID,
-			OptionDHCPMaxMsgSize,
-		},
+	"github.com/stretchr/testify/assert"
+)
+
+// Test dispatch to ReplyWriter
+func TestRequestWriteReply(t *testing.T) {
+	rw := &testReplyWriter{}
+
+	msg := Request{
+		Packet:      NewPacket(BootRequest),
+		ReplyWriter: rw,
 	}
 
-	testCase.Test(t)
+	reps := []Reply{
+		CreateAck(msg),
+		CreateNak(msg),
+	}
+
+	for _, rep := range reps {
+		rw.wrote = false
+		msg.WriteReply(rep)
+		assert.True(t, rw.wrote)
+	}
 }

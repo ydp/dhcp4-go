@@ -17,21 +17,21 @@ package dhcpv4
 
 import "encoding/binary"
 
-// DHCPAck is a server to client packet with configuration parameters,
+// Ack is a server to client packet with configuration parameters,
 // including committed network address.
-type DHCPAck struct {
+type Ack struct {
 	Packet
 
-	req Request
+	msg Message
 }
 
-func CreateDHCPAck(req Request) DHCPAck {
-	rep := DHCPAck{
-		Packet: NewReply(req),
-		req:    req,
+func CreateAck(msg Message) Ack {
+	rep := Ack{
+		Packet: NewReply(msg),
+		msg:    msg,
 	}
 
-	rep.SetMessageType(MessageTypeDHCPAck)
+	rep.SetMessageType(MessageTypeAck)
 	return rep
 }
 
@@ -67,14 +67,14 @@ var dhcpAckValidation = []Validation{
 	ValidateMustNot(OptionDHCPMaxMsgSize),
 }
 
-func (d DHCPAck) Validate() error {
+func (d Ack) Validate() error {
 	var err error
 
 	// Validation is subtly different based on type of request
-	switch d.req.GetMessageType() {
-	case MessageTypeDHCPRequest:
+	switch d.msg.GetMessageType() {
+	case MessageTypeRequest:
 		err = Validate(d.Packet, dhcpAckOnRequestValidation)
-	case MessageTypeDHCPInform:
+	case MessageTypeInform:
 		err = Validate(d.Packet, dhcpAckOnInformValidation)
 	}
 
@@ -85,17 +85,17 @@ func (d DHCPAck) Validate() error {
 	return Validate(d.Packet, dhcpAckValidation)
 }
 
-func (d DHCPAck) ToBytes() ([]byte, error) {
+func (d Ack) ToBytes() ([]byte, error) {
 	opts := packetToBytesOptions{}
 
 	// Copy MaxMsgSize if set in the request
-	if v, ok := d.Request().GetOption(OptionDHCPMaxMsgSize); ok {
+	if v, ok := d.Message().GetOption(OptionDHCPMaxMsgSize); ok {
 		opts.maxLen = binary.BigEndian.Uint16(v)
 	}
 
 	return PacketToBytes(d.Packet, &opts)
 }
 
-func (d DHCPAck) Request() Request {
-	return d.req
+func (d Ack) Message() Message {
+	return d.msg
 }

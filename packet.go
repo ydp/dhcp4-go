@@ -236,7 +236,7 @@ func NewPacket(o OpCode) Packet {
 }
 
 // NewReply creates and returns a new reply packet given a request.
-func NewReply(req PacketGetter) Packet {
+func NewReply(msg PacketGetter) Packet {
 	rep := NewPacket(BootReply)
 
 	// Hardware type and address length
@@ -244,12 +244,12 @@ func NewReply(req PacketGetter) Packet {
 	rep.HLen()[0] = 6  // MAC-48 is 6 octets
 
 	// Copy transaction identifier
-	copy(rep.XID(), req.GetXID()[:])
+	copy(rep.XID(), msg.GetXID()[:])
 
 	// Copy fields from request (per RFC2131, section 4.3, table 3)
-	copy(rep.Flags(), req.GetFlags())
-	copy(rep.CHAddr(), req.GetCHAddr())
-	copy(rep.GIAddr(), req.GetGIAddr())
+	copy(rep.Flags(), msg.GetFlags())
+	copy(rep.CHAddr(), msg.GetCHAddr())
+	copy(rep.GIAddr(), msg.GetGIAddr())
 
 	// The remainder of the fields are set depending on the outcome of the
 	// handler. Once the packet has been filled in, it should be validated before

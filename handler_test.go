@@ -107,7 +107,7 @@ func (r *testReply) ToBytes() (b []byte, err error) {
 	return b, err
 }
 
-func (r *testReply) Request() Request {
+func (r *testReply) Message() Message {
 	args := r.Called()
 	return args.Get(0).(Packet)
 }
@@ -157,7 +157,7 @@ func TestReplyWriterDestinationAddress(t *testing.T) {
 	someIP := net.IP{1, 2, 3, 4}
 
 	testCases := []struct {
-		req Packet
+		msg Packet
 		src net.UDPAddr
 		dst net.IP
 	}{
@@ -174,7 +174,7 @@ func TestReplyWriterDestinationAddress(t *testing.T) {
 		r := testReply{}
 		r.On("Validate").Return(nil)
 		r.On("ToBytes").Return([]byte("xyz"), nil)
-		r.On("Request").Return(testCase.req)
+		r.On("Message").Return(testCase.msg)
 
 		pw := &testPacketConn{}
 		pw.On("WriteTo", mock.Anything, mock.Anything, mock.Anything).Return(3, nil)
@@ -197,8 +197,8 @@ type testHandler struct {
 	mock.Mock
 }
 
-func (h *testHandler) ServeDHCP(req Request) {
-	h.Called(req)
+func (h *testHandler) ServeDHCP(msg Message) {
+	h.Called(msg)
 }
 
 func TestServeReturnsReadError(t *testing.T) {
@@ -209,7 +209,7 @@ func TestServeReturnsReadError(t *testing.T) {
 	assert.Equal(t, io.EOF, err)
 }
 
-func TestServeFiltersNonRequests(t *testing.T) {
+func TestServeFiltersNonMessages(t *testing.T) {
 	var err error
 	var buf []byte
 	var bufs [3][]byte
@@ -243,16 +243,16 @@ func TestServeFiltersNonRequests(t *testing.T) {
 	}
 }
 
-func TestServeRequestDispatch(t *testing.T) {
+func TestServeMessageDispatch(t *testing.T) {
 	testCases := []struct {
 		t MessageType
 		a mock.AnythingOfTypeArgument
 	}{
-		{MessageTypeDHCPDiscover, mock.AnythingOfType("DHCPDiscover")},
-		{MessageTypeDHCPRequest, mock.AnythingOfType("DHCPRequest")},
-		{MessageTypeDHCPDecline, mock.AnythingOfType("DHCPDecline")},
-		{MessageTypeDHCPRelease, mock.AnythingOfType("DHCPRelease")},
-		{MessageTypeDHCPInform, mock.AnythingOfType("DHCPInform")},
+		{MessageTypeDiscover, mock.AnythingOfType("Discover")},
+		{MessageTypeRequest, mock.AnythingOfType("Request")},
+		{MessageTypeDecline, mock.AnythingOfType("Decline")},
+		{MessageTypeRelease, mock.AnythingOfType("Release")},
+		{MessageTypeInform, mock.AnythingOfType("Inform")},
 	}
 
 	for _, testCase := range testCases {

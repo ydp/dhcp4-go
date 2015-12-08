@@ -17,22 +17,22 @@ package dhcpv4
 
 import "encoding/binary"
 
-// DHCPNak is a server to client packet indicating client's notion of network
+// Nak is a server to client packet indicating client's notion of network
 // address is incorrect (e.g., client has moved to new subnet) or client's
 // lease as expired.
-type DHCPNak struct {
+type Nak struct {
 	Packet
 
-	req Request
+	msg Message
 }
 
-func CreateDHCPNak(req Request) DHCPNak {
-	rep := DHCPNak{
-		Packet: NewReply(req),
-		req:    req,
+func CreateNak(msg Message) Nak {
+	rep := Nak{
+		Packet: NewReply(msg),
+		msg:    msg,
 	}
 
-	rep.SetMessageType(MessageTypeDHCPNak)
+	rep.SetMessageType(MessageTypeNak)
 	return rep
 }
 
@@ -64,24 +64,24 @@ var dhcpNakValidation = []Validation{
 	ValidateAllowedOptions(dhcpNakAllowedOptions),
 }
 
-func (d DHCPNak) Validate() error {
+func (d Nak) Validate() error {
 	return Validate(d.Packet, dhcpNakValidation)
 }
 
-func (d DHCPNak) ToBytes() ([]byte, error) {
+func (d Nak) ToBytes() ([]byte, error) {
 	opts := packetToBytesOptions{
 		skipFile:  true,
 		skipSName: true,
 	}
 
 	// Copy MaxMsgSize if set in the request
-	if v, ok := d.Request().GetOption(OptionDHCPMaxMsgSize); ok {
+	if v, ok := d.Message().GetOption(OptionDHCPMaxMsgSize); ok {
 		opts.maxLen = binary.BigEndian.Uint16(v)
 	}
 
 	return PacketToBytes(d.Packet, &opts)
 }
 
-func (d DHCPNak) Request() Request {
-	return d.req
+func (d Nak) Message() Message {
+	return d.msg
 }

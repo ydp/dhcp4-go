@@ -64,9 +64,9 @@ func (rw *replyWriter) WriteReply(r Reply) error {
 		return err
 	}
 
-	req := r.Request()
+	msg := r.Message()
 	addr := rw.addr
-	bcast := req.GetFlags()[0] & 128
+	bcast := msg.GetFlags()[0] & 128
 
 	// Broadcast the reply if the request packet has no address associated with
 	// it, or if the client explicitly asks for a broadcast reply.
@@ -83,7 +83,7 @@ func (rw *replyWriter) WriteReply(r Reply) error {
 }
 
 // Handler defines the interface an object needs to implement to handle DHCP
-// packets. The handler should do a type switch on the Request object that is
+// packets. The handler should do a type switch on the Message object that is
 // passed as argument to determine what kind of packet it is dealing with. It
 // can use the WriteReply function on the request to send a reply back to the
 // peer responsible for sending the request packet. While the handler may be
@@ -94,7 +94,7 @@ func (rw *replyWriter) WriteReply(r Reply) error {
 // WriteReply function can be called from multiple goroutines without needing
 // extra synchronization.
 type Handler interface {
-	ServeDHCP(req Request)
+	ServeDHCP(msg Message)
 }
 
 // Serve reads packets off the network and calls the specified handler.
@@ -127,23 +127,23 @@ func Serve(pc PacketConn, h Handler) error {
 			ifindex: ifindex,
 		}
 
-		var req Request
+		var msg Message
 
 		switch p.GetMessageType() {
-		case MessageTypeDHCPDiscover:
-			req = DHCPDiscover{p, &rw}
-		case MessageTypeDHCPRequest:
-			req = DHCPRequest{p, &rw}
-		case MessageTypeDHCPDecline:
-			req = DHCPDecline{p}
-		case MessageTypeDHCPRelease:
-			req = DHCPRelease{p}
-		case MessageTypeDHCPInform:
-			req = DHCPInform{p, &rw}
+		case MessageTypeDiscover:
+			msg = Discover{p, &rw}
+		case MessageTypeRequest:
+			msg = Request{p, &rw}
+		case MessageTypeDecline:
+			msg = Decline{p}
+		case MessageTypeRelease:
+			msg = Release{p}
+		case MessageTypeInform:
+			msg = Inform{p, &rw}
 		}
 
-		if req != nil {
-			h.ServeDHCP(req)
+		if msg != nil {
+			h.ServeDHCP(msg)
 		}
 	}
 }

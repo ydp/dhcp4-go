@@ -15,8 +15,8 @@ limitations under the License.
 */
 package dhcpv4
 
-// Request
-type Request interface {
+// Message
+type Message interface {
 	PacketGetter
 	OptionGetter
 
@@ -28,7 +28,7 @@ type Request interface {
 type Reply interface {
 	Validate() error
 	ToBytes() ([]byte, error)
-	Request() Request
+	Message() Message
 
 	PacketSetter
 	OptionSetter

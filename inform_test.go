@@ -15,11 +15,28 @@ limitations under the License.
 */
 package dhcpv4
 
-// DHCPRequest is a client message to servers either (a) requesting offered
-// parameters from one server and implicitly declining offers from all others,
-// (b) confirming correctness of previously allocated address after, e.g.,
-// system reboot, or (c) extending the lease on a particular network address.
-type DHCPRequest struct {
-	Packet
-	ReplyWriter
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+// Test dispatch to ReplyWriter
+func TestInformWriteReply(t *testing.T) {
+	rw := &testReplyWriter{}
+
+	msg := Inform{
+		Packet:      NewPacket(BootRequest),
+		ReplyWriter: rw,
+	}
+
+	reps := []Reply{
+		CreateAck(msg),
+	}
+
+	for _, rep := range reps {
+		rw.wrote = false
+		msg.WriteReply(rep)
+		assert.True(t, rw.wrote)
+	}
 }
