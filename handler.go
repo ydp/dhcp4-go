@@ -148,6 +148,24 @@ func Serve(pc PacketConn, h Handler) error {
 	}
 }
 
+func ListenAndServe(addr string, h Handler) error {
+	if addr == "" {
+		addr = ":67"
+	}
+	l, err := net.ListenPacket("udp4", addr)
+	if err != nil {
+		return err
+	}
+	defer l.Close() // Should I not do this?
+
+	c, err := NewPacketConn(l)
+	if err != nil {
+		return err
+	}
+
+	return Serve(c, h)
+}
+
 type packetConn struct {
 	net.PacketConn
 	ipv4pc *ipv4.PacketConn
