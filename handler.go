@@ -52,10 +52,7 @@ type replyWriter struct {
 }
 
 func (rw *replyWriter) WriteReply(r Reply) error {
-	var err error
-
-	err = r.Validate()
-	if err != nil {
+	if err := r.Validate(); err != nil {
 		return err
 	}
 
@@ -64,22 +61,20 @@ func (rw *replyWriter) WriteReply(r Reply) error {
 		return err
 	}
 
-	msg := r.Message()
-	addr := rw.addr
-	bcast := msg.GetFlags()[0] & 128
-
-	// Broadcast the reply if the request packet has no address associated with
-	// it, or if the client explicitly asks for a broadcast reply.
-	if addr.IP.Equal(net.IPv4zero) || bcast > 0 {
+	var (
+		msg  = r.Message()
+		addr = rw.addr
+	)
+	if ip := msg.GetGIAddr(); ip != nil && !ip.Equal(net.IPv4zero) {
+		addr.IP = ip
+	} else if addr.IP.Equal(net.IPv4zero) || msg.GetFlags()[0]&0x80 > 0 {
+		// Broadcast the reply if the request packet has no address associated with
+		// it, or if the client explicitly asks for a broadcast reply.
 		addr.IP = net.IPv4bcast
 	}
 
 	_, err = rw.pw.WriteTo(bytes, &addr, rw.ifindex)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // Handler defines the interface an object needs to implement to handle DHCP
