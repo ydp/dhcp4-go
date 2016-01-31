@@ -1,4 +1,4 @@
-# dhcpv4-go
+# dhcp4-go
 
 DHCPv4 packet serialization/deserialization.
 
