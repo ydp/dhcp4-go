@@ -1,18 +1,3 @@
-/*
-Copyright (c) 2014 VMware, Inc. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package dhcp4
 
 import "fmt"
@@ -46,12 +31,12 @@ func (v validateMust) Validate(p Packet) error {
 	if v.have {
 		// MUST HAVE
 		if !ok {
-			err = fmt.Errorf("dhcpv4: packet MUST have field %d", v.o)
+			err = fmt.Errorf("dhcp4: packet MUST have field %d", v.o)
 		}
 	} else {
 		// MUST NOT HAVE
 		if ok {
-			err = fmt.Errorf("dhcpv4: packet MUST NOT have field %d", v.o)
+			err = fmt.Errorf("dhcp4: packet MUST NOT have field %d", v.o)
 		}
 	}
 
@@ -76,7 +61,7 @@ func (v validateAllowedOptions) Validate(p Packet) error {
 	for k := range p.OptionMap {
 		// If an option is not allowed, the packet MUST NOT have it.
 		if !v.allowed[k] {
-			err = fmt.Errorf("dhcpv4: packet MUST NOT have field %d", k)
+			err = fmt.Errorf("dhcp4: packet MUST NOT have field %d", k)
 			break
 		}
 	}
