@@ -5,9 +5,10 @@ import "testing"
 func TestNakValidation(t *testing.T) {
 	testCase := replyValidationTestCase{
 		newReply: func() ValidatingReply {
+			msg := NewPacket(BootRequest)
 			return &Nak{
 				Packet: NewPacket(BootReply),
-				msg:    NewPacket(BootRequest),
+				msg:    &msg,
 			}
 		},
 		must: []Option{

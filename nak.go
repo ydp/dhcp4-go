@@ -8,10 +8,10 @@ import "encoding/binary"
 type Nak struct {
 	Packet
 
-	msg Message
+	msg *Packet
 }
 
-func CreateNak(msg Message) Nak {
+func CreateNak(msg *Packet) Nak {
 	rep := Nak{
 		Packet: NewReply(msg),
 		msg:    msg,
@@ -67,6 +67,6 @@ func (d Nak) ToBytes() ([]byte, error) {
 	return PacketToBytes(d.Packet, &opts)
 }
 
-func (d Nak) Message() Message {
+func (d Nak) Message() *Packet {
 	return d.msg
 }

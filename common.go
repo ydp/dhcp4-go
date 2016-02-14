@@ -1,19 +1,10 @@
 package dhcp4
 
-// Message
-type Message interface {
-	PacketGetter
-	OptionGetter
-
-	// Every request can tell where it came from.
-	InterfaceIndex() int
-}
-
 // Reply defines an interface implemented by DHCP replies.
 type Reply interface {
 	Validate() error
 	ToBytes() ([]byte, error)
-	Message() Message
+	Message() *Packet
 
 	PacketSetter
 	OptionSetter

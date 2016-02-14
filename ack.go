@@ -7,10 +7,10 @@ import "encoding/binary"
 type Ack struct {
 	Packet
 
-	msg Message
+	msg *Packet
 }
 
-func CreateAck(msg Message) Ack {
+func CreateAck(msg *Packet) Ack {
 	rep := Ack{
 		Packet: NewReply(msg),
 		msg:    msg,
@@ -81,6 +81,6 @@ func (d Ack) ToBytes() ([]byte, error) {
 	return PacketToBytes(d.Packet, &opts)
 }
 
-func (d Ack) Message() Message {
+func (d Ack) Message() *Packet {
 	return d.msg
 }

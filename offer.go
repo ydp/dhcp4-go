@@ -7,10 +7,10 @@ import "encoding/binary"
 type Offer struct {
 	Packet
 
-	msg Message
+	msg *Packet
 }
 
-func CreateOffer(msg Message) Offer {
+func CreateOffer(msg *Packet) Offer {
 	rep := Offer{
 		Packet: NewReply(msg),
 		msg:    msg,
@@ -59,6 +59,6 @@ func (d Offer) ToBytes() ([]byte, error) {
 	return PacketToBytes(d.Packet, &opts)
 }
 
-func (d Offer) Message() Message {
+func (d Offer) Message() *Packet {
 	return d.msg
 }

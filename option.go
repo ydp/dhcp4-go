@@ -45,6 +45,7 @@ func (t MessageType) String() string {
 
 // OptionGetter defines a bag of functions that can be used to get options.
 type OptionGetter interface {
+	GetSortedOptions() []Option
 	GetOption(Option) ([]byte, bool)
 	GetMessageType() MessageType
 	GetUint8(Option) (uint8, bool)
@@ -90,13 +91,14 @@ func (o optionSlice) Swap(i, j int) {
 	o[j] = x
 }
 
-func sortedOptions(om OptionMap) optionSlice {
+// GetSortedOptions gets all the options (keys) in sorted order.
+func (om OptionMap) GetSortedOptions() []Option {
 	ks := make(optionSlice, 0, len(om))
 	for k := range om {
 		ks = append(ks, k)
 	}
 	sort.Sort(ks)
-	return ks
+	return []Option(ks)
 }
 
 // GetOption gets the []byte value of an option.

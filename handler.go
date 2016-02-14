@@ -3,8 +3,11 @@ package dhcp4
 import (
 	"net"
 
+	"github.com/coreos/pkg/capnslog"
 	"golang.org/x/net/ipv4"
 )
+
+var clog = capnslog.NewPackageLogger("github.com/betawaffle/dhcp4-go", "dhcp")
 
 // PacketReader defines an adaptation of the ReadFrom function (as defined
 // net.PacketConn) that includes the interface index the packet arrived on.
@@ -62,6 +65,7 @@ func (rw *replyWriter) WriteReply(r Reply) error {
 	return err
 }
 
+// FIXME(betawaffle)
 // Handler defines the interface an object needs to implement to handle DHCP
 // packets. The handler should do a type switch on the Message object that is
 // passed as argument to determine what kind of packet it is dealing with. It
@@ -74,13 +78,12 @@ func (rw *replyWriter) WriteReply(r Reply) error {
 // WriteReply function can be called from multiple goroutines without needing
 // extra synchronization.
 type Handler interface {
-	ServeDHCP(msg Message)
+	ServeDHCP(w ReplyWriter, p *Packet)
 }
 
 // Serve reads packets off the network and calls the specified handler.
 func Serve(pc PacketConn, h Handler) error {
 	buf := make([]byte, 65536)
-
 	for {
 		n, addr, ifindex, err := pc.ReadFrom(buf)
 		if err != nil {
@@ -89,6 +92,7 @@ func Serve(pc PacketConn, h Handler) error {
 
 		p, err := PacketFromBytes(buf[:n])
 		if err != nil {
+			clog.Warning(err)
 			continue
 		}
 
@@ -96,53 +100,46 @@ func Serve(pc PacketConn, h Handler) error {
 		p.ifindex = ifindex
 
 		// Filter everything but requests
-		if OpCode(p.Op()[0]) != BootRequest {
+		if op := OpCode(p.Op()[0]); op != BootRequest {
+			clog.Warningf("ignoring op=%d", op)
 			continue
 		}
 
-		rw := replyWriter{
-			pw: pc,
-
-			addr:    *addr.(*net.UDPAddr),
-			ifindex: ifindex,
-		}
-
-		var msg Message
-
+		var rw ReplyWriter
 		switch p.GetMessageType() {
-		case MessageTypeDiscover:
-			msg = Discover{p, &rw}
-		case MessageTypeRequest:
-			msg = Request{p, &rw}
-		case MessageTypeDecline:
-			msg = Decline{p}
-		case MessageTypeRelease:
-			msg = Release{p}
-		case MessageTypeInform:
-			msg = Inform{p, &rw}
-		}
+		case MessageTypeDiscover, MessageTypeRequest, MessageTypeInform:
+			rw = &replyWriter{
+				pw: pc,
 
-		if msg != nil {
-			h.ServeDHCP(msg)
+				addr:    *addr.(*net.UDPAddr),
+				ifindex: ifindex,
+			}
 		}
+		h.ServeDHCP(rw, &p)
 	}
 }
 
-func ListenAndServe(addr string, h Handler) error {
+func Listen(addr string) (PacketConn, error) {
 	if addr == "" {
 		addr = ":67"
 	}
 	l, err := net.ListenPacket("udp4", addr)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer l.Close() // Should I not do this?
-
 	c, err := NewPacketConn(l)
+	if err != nil {
+		l.Close()
+		return nil, err
+	}
+	return c, nil
+}
+
+func ListenAndServe(addr string, h Handler) error {
+	c, err := Listen(addr)
 	if err != nil {
 		return err
 	}
-
 	return Serve(c, h)
 }
 

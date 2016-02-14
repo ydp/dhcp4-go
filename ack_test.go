@@ -9,7 +9,7 @@ func TestAckOnRequestValidation(t *testing.T) {
 			msg.SetMessageType(MessageTypeRequest)
 			return &Ack{
 				Packet: NewPacket(BootReply),
-				msg:    msg,
+				msg:    &msg,
 			}
 		},
 		must: []Option{
@@ -34,7 +34,7 @@ func TestAckOnInformValidation(t *testing.T) {
 			msg.SetMessageType(MessageTypeInform)
 			return &Ack{
 				Packet: NewPacket(BootReply),
-				msg:    msg,
+				msg:    &msg,
 			}
 		},
 		must: []Option{

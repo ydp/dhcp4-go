@@ -312,7 +312,7 @@ func PacketToBytes(p Packet, opts *packetToBytesOptions) ([]byte, error) {
 
 	// Write options to one of the buffers.
 	// Iterate over options in numeric order.
-	for _, k := range sortedOptions(p.OptionMap) {
+	for _, k := range p.GetSortedOptions() {
 		v := p.OptionMap[k]
 		l := 2 + len(v)
 

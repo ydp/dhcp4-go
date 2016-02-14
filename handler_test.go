@@ -92,9 +92,9 @@ func (r *testReply) ToBytes() (b []byte, err error) {
 	return b, err
 }
 
-func (r *testReply) Message() Message {
+func (r *testReply) Message() *Packet {
 	args := r.Called()
-	return args.Get(0).(Packet)
+	return args.Get(0).(*Packet)
 }
 
 func (r *testReply) SetCIAddr(ip net.IP) {}
@@ -142,17 +142,17 @@ func TestReplyWriterDestinationAddress(t *testing.T) {
 	someIP := net.IP{1, 2, 3, 4}
 
 	testCases := []struct {
-		msg Packet
+		msg *Packet
 		src net.UDPAddr
 		dst net.IP
 	}{
 		// Broadcast flag trumps everything
-		{withBcast, net.UDPAddr{IP: zeroIP}, net.IPv4bcast},
-		{withBcast, net.UDPAddr{IP: someIP}, net.IPv4bcast},
+		{&withBcast, net.UDPAddr{IP: zeroIP}, net.IPv4bcast},
+		{&withBcast, net.UDPAddr{IP: someIP}, net.IPv4bcast},
 
 		// Without broadcast flag, only broadcast without a destination IP
-		{withoutBcast, net.UDPAddr{IP: zeroIP}, net.IPv4bcast},
-		{withoutBcast, net.UDPAddr{IP: someIP}, someIP},
+		{&withoutBcast, net.UDPAddr{IP: zeroIP}, net.IPv4bcast},
+		{&withoutBcast, net.UDPAddr{IP: someIP}, someIP},
 	}
 
 	for _, testCase := range testCases {
@@ -182,8 +182,8 @@ type testHandler struct {
 	mock.Mock
 }
 
-func (h *testHandler) ServeDHCP(msg Message) {
-	h.Called(msg)
+func (h *testHandler) ServeDHCP(w ReplyWriter, p *Packet) {
+	h.Called(w, p)
 }
 
 func TestServeReturnsReadError(t *testing.T) {
@@ -208,7 +208,7 @@ func TestServeFiltersNonMessages(t *testing.T) {
 
 	bufs[1] = buf
 
-	p2 := NewPacket(OpCode(2)) // Undefined opcode
+	p2 := NewPacket(OpCode(3)) // Undefined opcode
 	if buf, err = PacketToBytes(p2, nil); err != nil {
 		panic(err)
 	}
@@ -224,42 +224,6 @@ func TestServeFiltersNonMessages(t *testing.T) {
 		h := &testHandler{}
 		Serve(pc, h)
 
-		h.AssertNotCalled(t, "ServeDHCP", mock.Anything)
-	}
-}
-
-func TestServeMessageDispatch(t *testing.T) {
-	testCases := []struct {
-		t MessageType
-		a mock.AnythingOfTypeArgument
-	}{
-		{MessageTypeDiscover, mock.AnythingOfType("Discover")},
-		{MessageTypeRequest, mock.AnythingOfType("Request")},
-		{MessageTypeDecline, mock.AnythingOfType("Decline")},
-		{MessageTypeRelease, mock.AnythingOfType("Release")},
-		{MessageTypeInform, mock.AnythingOfType("Inform")},
-	}
-
-	for _, testCase := range testCases {
-		var buf []byte
-		var err error
-
-		p := NewPacket(BootRequest)
-		p.SetMessageType(testCase.t)
-
-		if buf, err = PacketToBytes(p, nil); err != nil {
-			panic(err)
-		}
-
-		pc := &testPacketConn{}
-		pc.ReadSuccess(buf)
-		pc.ReadError(io.EOF)
-
-		h := &testHandler{}
-		h.On("ServeDHCP", mock.Anything).Return()
-
-		Serve(pc, h)
-
-		h.AssertCalled(t, "ServeDHCP", testCase.a)
+		h.AssertNotCalled(t, "ServeDHCP", mock.Anything, mock.Anything)
 	}
 }
