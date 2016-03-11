@@ -5,6 +5,7 @@ type Reply interface {
 	Validate() error
 	ToBytes() ([]byte, error)
 	Message() *Packet
+	Reply() *Packet
 
 	PacketSetter
 	OptionSetter

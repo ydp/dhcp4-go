@@ -44,11 +44,11 @@ var dhcpOfferValidation = []Validation{
 	ValidateMustNot(OptionDHCPMaxMsgSize),
 }
 
-func (d Offer) Validate() error {
+func (d *Offer) Validate() error {
 	return Validate(d.Packet, dhcpOfferValidation)
 }
 
-func (d Offer) ToBytes() ([]byte, error) {
+func (d *Offer) ToBytes() ([]byte, error) {
 	opts := packetToBytesOptions{}
 
 	// Copy MaxMsgSize if set in the request
@@ -59,6 +59,10 @@ func (d Offer) ToBytes() ([]byte, error) {
 	return PacketToBytes(d.Packet, &opts)
 }
 
-func (d Offer) Message() *Packet {
+func (d *Offer) Message() *Packet {
 	return d.msg
+}
+
+func (d *Offer) Reply() *Packet {
+	return &d.Packet
 }

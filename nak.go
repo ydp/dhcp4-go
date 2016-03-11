@@ -49,11 +49,11 @@ var dhcpNakValidation = []Validation{
 	ValidateAllowedOptions(dhcpNakAllowedOptions),
 }
 
-func (d Nak) Validate() error {
+func (d *Nak) Validate() error {
 	return Validate(d.Packet, dhcpNakValidation)
 }
 
-func (d Nak) ToBytes() ([]byte, error) {
+func (d *Nak) ToBytes() ([]byte, error) {
 	opts := packetToBytesOptions{
 		skipFile:  true,
 		skipSName: true,
@@ -67,6 +67,10 @@ func (d Nak) ToBytes() ([]byte, error) {
 	return PacketToBytes(d.Packet, &opts)
 }
 
-func (d Nak) Message() *Packet {
+func (d *Nak) Message() *Packet {
 	return d.msg
+}
+
+func (d *Nak) Reply() *Packet {
+	return &d.Packet
 }

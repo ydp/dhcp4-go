@@ -7,16 +7,24 @@ type Validation interface {
 }
 
 func Validate(p Packet, vs []Validation) error {
-	var err error
-
 	for _, v := range vs {
-		err = v.Validate(p)
-		if err != nil {
+		if err := v.Validate(p); err != nil {
 			return err
 		}
 	}
-
 	return nil
+}
+
+type ValidationError struct {
+	Option
+	MustHave bool
+}
+
+func (e *ValidationError) Error() string {
+	if e.MustHave {
+		return fmt.Sprintf("dhcp4: packet MUST have field %d", e.Option)
+	}
+	return fmt.Sprintf("dhcp4: packet MUST NOT have field %d", e.Option)
 }
 
 type validateMust struct {
@@ -25,22 +33,10 @@ type validateMust struct {
 }
 
 func (v validateMust) Validate(p Packet) error {
-	var err error
-
-	_, ok := p.GetOption(v.o)
-	if v.have {
-		// MUST HAVE
-		if !ok {
-			err = fmt.Errorf("dhcp4: packet MUST have field %d", v.o)
-		}
-	} else {
-		// MUST NOT HAVE
-		if ok {
-			err = fmt.Errorf("dhcp4: packet MUST NOT have field %d", v.o)
-		}
+	if _, ok := p.GetOption(v.o); v.have != ok {
+		return &ValidationError{Option: v.o, MustHave: v.have}
 	}
-
-	return err
+	return nil
 }
 
 func ValidateMustNot(o Option) Validation {
@@ -56,17 +52,13 @@ type validateAllowedOptions struct {
 }
 
 func (v validateAllowedOptions) Validate(p Packet) error {
-	var err error
-
 	for k := range p.OptionMap {
 		// If an option is not allowed, the packet MUST NOT have it.
 		if !v.allowed[k] {
-			err = fmt.Errorf("dhcp4: packet MUST NOT have field %d", k)
-			break
+			return &ValidationError{Option: k, MustHave: false}
 		}
 	}
-
-	return err
+	return nil
 }
 
 func ValidateAllowedOptions(os []Option) Validation {

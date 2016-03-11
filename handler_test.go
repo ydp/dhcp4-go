@@ -97,6 +97,10 @@ func (r *testReply) Message() *Packet {
 	return args.Get(0).(*Packet)
 }
 
+func (r *testReply) Reply() *Packet {
+	return nil // FIXME
+}
+
 func (r *testReply) SetCIAddr(ip net.IP) {}
 func (r *testReply) SetYIAddr(ip net.IP) {}
 func (r *testReply) SetSIAddr(ip net.IP) {}

@@ -203,8 +203,6 @@ func (p RawPacket) ParseOptions() (OptionMap, error) {
 type Packet struct {
 	RawPacket
 	OptionMap
-
-	ifindex int
 }
 
 // NewPacket creates and returns a new packet with the specified OpCode.
@@ -240,11 +238,6 @@ func NewReply(msg PacketGetter) Packet {
 	// handler. Once the packet has been filled in, it should be validated before
 	// sending it out on the wire.
 	return rep
-}
-
-// InterfaceIndex returns the interface index this packet was received on.
-func (p Packet) InterfaceIndex() int {
-	return p.ifindex
 }
 
 // PacketFromBytes deserializes the wire-level representation of a DHCP packet

@@ -3,11 +3,8 @@ package dhcp4
 import (
 	"net"
 
-	"github.com/coreos/pkg/capnslog"
 	"golang.org/x/net/ipv4"
 )
-
-var clog = capnslog.NewPackageLogger("github.com/betawaffle/dhcp4-go", "dhcp")
 
 // PacketReader defines an adaptation of the ReadFrom function (as defined
 // net.PacketConn) that includes the interface index the packet arrived on.
@@ -52,6 +49,7 @@ func (rw *replyWriter) WriteReply(r Reply) error {
 	var (
 		msg  = r.Message()
 		addr = rw.addr
+		send = &serverSend{req: msg, rep: r.Reply(), ifindex: rw.ifindex}
 	)
 	if ip := msg.GetGIAddr(); ip != nil && !ip.Equal(net.IPv4zero) {
 		addr.IP = ip
@@ -60,6 +58,9 @@ func (rw *replyWriter) WriteReply(r Reply) error {
 		// it, or if the client explicitly asks for a broadcast reply.
 		addr.IP = net.IPv4bcast
 	}
+
+	send.ip = addr.IP
+	clog.Trace(send)
 
 	_, err = rw.pw.WriteTo(bytes, &addr, rw.ifindex)
 	return err
@@ -96,14 +97,14 @@ func Serve(pc PacketConn, h Handler) error {
 			continue
 		}
 
-		// Stash interface index in packet structure
-		p.ifindex = ifindex
-
 		// Filter everything but requests
 		if op := OpCode(p.Op()[0]); op != BootRequest {
-			clog.Warningf("ignoring op=%d", op)
+			clog.Warningf("ignoring op=%d from %s", op, p.GetCHAddr())
 			continue
 		}
+
+		a := addr.(*net.UDPAddr)
+		clog.Trace(&serverRecv{msg: &p, ip: a.IP, ifindex: ifindex})
 
 		var rw ReplyWriter
 		switch p.GetMessageType() {
@@ -111,7 +112,7 @@ func Serve(pc PacketConn, h Handler) error {
 			rw = &replyWriter{
 				pw: pc,
 
-				addr:    *addr.(*net.UDPAddr),
+				addr:    *a,
 				ifindex: ifindex,
 			}
 		}

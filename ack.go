@@ -52,7 +52,7 @@ var dhcpAckValidation = []Validation{
 	ValidateMustNot(OptionDHCPMaxMsgSize),
 }
 
-func (d Ack) Validate() error {
+func (d *Ack) Validate() error {
 	var err error
 
 	// Validation is subtly different based on type of request
@@ -70,7 +70,7 @@ func (d Ack) Validate() error {
 	return Validate(d.Packet, dhcpAckValidation)
 }
 
-func (d Ack) ToBytes() ([]byte, error) {
+func (d *Ack) ToBytes() ([]byte, error) {
 	opts := packetToBytesOptions{}
 
 	// Copy MaxMsgSize if set in the request
@@ -81,6 +81,10 @@ func (d Ack) ToBytes() ([]byte, error) {
 	return PacketToBytes(d.Packet, &opts)
 }
 
-func (d Ack) Message() *Packet {
+func (d *Ack) Message() *Packet {
 	return d.msg
+}
+
+func (d *Ack) Reply() *Packet {
+	return &d.Packet
 }
