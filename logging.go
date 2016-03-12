@@ -5,8 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
-	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -41,31 +39,15 @@ func SetOptionFormatter(o Option, fn func([]byte) string) {
 	optionFormats[o] = fn
 }
 
-func formatOptions(om OptionMap) string {
-	fields := make([]string, 0, len(om))
-
-	for o, b := range om {
-		fn, ok := optionFormats[o]
-		if !ok {
-			fields = append(fields, fmt.Sprintf("option(%d)=%q", o, b))
-			continue
-		}
-		if fn == nil {
-			continue
-		}
-		fields = append(fields, fn(b))
-	}
-	sort.Strings(fields)
-	return strings.Join(fields, " ")
-}
-
 func formatHex(b []byte) string {
+	const hex = "0123456789abcdef"
+
 	buf := append(make([]byte, 0, len(b)*2+len(b)+2), '"')
 	for i, c := range b {
 		if i > 0 {
 			buf = append(buf, ':')
 		}
-		buf = strconv.AppendUint(buf, uint64(c), 16) // FIXME
+		buf = append(buf, hex[c>>4], hex[c&0xF])
 	}
 	buf = append(buf, '"')
 	return string(buf)
@@ -112,23 +94,22 @@ type serverRecv struct {
 
 func (sr *serverRecv) String() string {
 	buf := new(bytes.Buffer)
-	buf.WriteString("received ")
-	buf.WriteString(sr.msg.GetMessageType().String())
-	buf.WriteString(" from ")
+	buf.WriteString("event=recv mac=")
 	buf.WriteString(sr.msg.GetCHAddr().String())
-	buf.WriteString(" via ")
-	buf.WriteString(sr.ip.String())
 
 	if sr.msg.GetGIAddr().Equal(sr.ip) {
-		buf.WriteString(" (gateway)")
+		buf.WriteString(" via=")
+	} else {
+		buf.WriteString(" src=")
 	}
+	buf.WriteString(sr.ip.String())
 
 	if iface, err := net.InterfaceByIndex(sr.ifindex); err == nil {
-		buf.WriteString(" over ")
+		buf.WriteString(" iface=")
 		buf.WriteString(iface.Name)
 	}
 
-	writeOptions(buf, sr.msg.OptionMap)
+	writePacketInfo(buf, sr.msg)
 
 	return buf.String()
 }
@@ -142,39 +123,56 @@ type serverSend struct {
 
 func (ss *serverSend) String() string {
 	buf := new(bytes.Buffer)
-	buf.WriteString("sending ")
-	buf.WriteString(ss.rep.GetMessageType().String())
-	buf.WriteString(" to ")
+	buf.WriteString("event=send mac=")
 	buf.WriteString(ss.req.GetCHAddr().String())
-	buf.WriteString(" via ")
-	buf.WriteString(ss.ip.String())
 
 	if ss.req.GetGIAddr().Equal(ss.ip) {
-		buf.WriteString(" (gateway)")
+		buf.WriteString(" via=")
+	} else {
+		buf.WriteString(" dst=")
 	}
+	buf.WriteString(ss.ip.String())
 
 	if iface, err := net.InterfaceByIndex(ss.ifindex); err == nil {
-		buf.WriteString(" over ")
+		buf.WriteString(" iface=")
 		buf.WriteString(iface.Name)
 	}
 
-	writeOptions(buf, ss.rep.OptionMap)
+	writePacketInfo(buf, ss.rep)
 
 	return buf.String()
 }
 
+func writePacketInfo(buf *bytes.Buffer, p *Packet) {
+	buf.WriteString(" type=")
+	buf.WriteString(p.GetMessageType().String())
+
+	buf.WriteString(" xid=")
+	buf.WriteString(formatHex(p.XID()))
+
+	if addr := p.GetYIAddr(); !net.IPv4zero.Equal(addr) {
+		buf.WriteString(" address=")
+		buf.WriteString(addr.String())
+	}
+
+	if secs := binary.BigEndian.Uint16(p.Secs()); secs > 0 {
+		fmt.Fprintf(buf, "secs=%d", secs)
+	}
+
+	writeOptions(buf, p.OptionMap)
+}
+
 func writeOptions(buf *bytes.Buffer, om OptionMap) {
-	// TODO: Figure out how best to sort these.
-	for o, b := range om {
+	for _, o := range om.GetSortedOptions() {
 		fn, ok := optionFormats[o]
 		if !ok {
-			fmt.Fprintf(buf, " option(%d)=%q", o, b)
+			fmt.Fprintf(buf, " option(%d)=%q", o, om[o])
 			continue
 		}
 		if fn == nil {
 			continue
 		}
-		if s := fn(b); s != "" {
+		if s := fn(om[o]); s != "" {
 			buf.WriteByte(' ')
 			buf.WriteString(s)
 		}

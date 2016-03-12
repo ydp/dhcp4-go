@@ -60,7 +60,7 @@ func (rw *replyWriter) WriteReply(r Reply) error {
 	}
 
 	send.ip = addr.IP
-	clog.Trace(send)
+	clog.Debug(send)
 
 	_, err = rw.pw.WriteTo(bytes, &addr, rw.ifindex)
 	return err
@@ -99,12 +99,12 @@ func Serve(pc PacketConn, h Handler) error {
 
 		// Filter everything but requests
 		if op := OpCode(p.Op()[0]); op != BootRequest {
-			clog.Warningf("ignoring op=%d from %s", op, p.GetCHAddr())
+			clog.Warningf("ignoring op=%d mac=%s", op, p.GetCHAddr())
 			continue
 		}
 
 		a := addr.(*net.UDPAddr)
-		clog.Trace(&serverRecv{msg: &p, ip: a.IP, ifindex: ifindex})
+		clog.Debug(&serverRecv{msg: &p, ip: a.IP, ifindex: ifindex})
 
 		var rw ReplyWriter
 		switch p.GetMessageType() {
