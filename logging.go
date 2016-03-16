@@ -144,11 +144,11 @@ func (ss *serverSend) String() string {
 }
 
 func writePacketInfo(buf *bytes.Buffer, p *Packet) {
-	buf.WriteString(" type=")
-	buf.WriteString(p.GetMessageType().String())
-
 	buf.WriteString(" xid=")
 	buf.WriteString(formatHex(p.XID()))
+
+	buf.WriteString(" type=")
+	buf.WriteString(p.GetMessageType().String())
 
 	if addr := p.GetYIAddr(); !net.IPv4zero.Equal(addr) {
 		buf.WriteString(" address=")
@@ -156,7 +156,7 @@ func writePacketInfo(buf *bytes.Buffer, p *Packet) {
 	}
 
 	if secs := binary.BigEndian.Uint16(p.Secs()); secs > 0 {
-		fmt.Fprintf(buf, "secs=%d", secs)
+		fmt.Fprintf(buf, " secs=%d", secs)
 	}
 
 	writeOptions(buf, p.OptionMap)
