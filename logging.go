@@ -159,7 +159,24 @@ func writePacketInfo(buf *bytes.Buffer, p *Packet) {
 		fmt.Fprintf(buf, " secs=%d", secs)
 	}
 
+	if addr := p.GetSIAddr(); !net.IPv4zero.Equal(addr) {
+		buf.WriteString(" next-server=")
+		buf.WriteString(addr.String())
+	}
+
+	if filename := nulTerminated(p.File()); len(filename) > 0 {
+		buf.WriteString(" filename=")
+		buf.Write(filename)
+	}
+
 	writeOptions(buf, p.OptionMap)
+}
+
+func nulTerminated(b []byte) []byte {
+	if i := bytes.IndexByte(b, 0); i != -1 {
+		return b[:i]
+	}
+	return b
 }
 
 func writeOptions(buf *bytes.Buffer, om OptionMap) {
