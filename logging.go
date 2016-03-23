@@ -15,24 +15,24 @@ var clog = capnslog.NewPackageLogger("github.com/betawaffle/dhcp4-go", "dhcp")
 
 var optionFormats = map[Option]func([]byte) string{
 	OptionDHCPMsgType:    nil,
-	OptionDHCPMaxMsgSize: nil, // func(b []byte) string { return fmt.Sprintf("max-msg-size=%d", binary.BigEndian.Uint16(b)) },
-	OptionParameterList:  nil, // func(b []byte) string { return "param-list=..." }
-	OptionClientID:       func(b []byte) string { return "client-id=" + formatHex(b) },
-	OptionClientNDI:      func(b []byte) string { return "client-ndi=" + formatNDI(b) },
-	OptionDHCPServerID:   func(b []byte) string { return "dhcp-server=" + net.IP(b).String() },
+	OptionDHCPMaxMsgSize: nil, // func(b []byte) string { return fmt.Sprintf("max_msg_size=%d", binary.BigEndian.Uint16(b)) },
+	OptionParameterList:  nil, // func(b []byte) string { return "param_list=..." }
+	OptionClientID:       func(b []byte) string { return "client_id=" + formatHex(b) },
+	OptionClientNDI:      func(b []byte) string { return "client_ndi=" + formatNDI(b) },
+	OptionDHCPServerID:   func(b []byte) string { return "dhcp_server=" + net.IP(b).String() },
 	OptionDomainServer:   func(b []byte) string { return "dns=" + formatIP(b) },
 	OptionHostname:       func(b []byte) string { return "hostname=" + string(b) },
-	OptionAddressRequest: func(b []byte) string { return "requested-ip=" + net.IP(b).String() },
-	OptionAddressTime:    func(b []byte) string { return "lease-time=" + formatSeconds(b) },
+	OptionAddressRequest: func(b []byte) string { return "requested_ip=" + net.IP(b).String() },
+	OptionAddressTime:    func(b []byte) string { return "lease_time=" + formatSeconds(b) },
 	OptionSubnetMask:     func(b []byte) string { return "netmask=" + net.IP(b).String() },
 	OptionRouter:         func(b []byte) string { return "routers=" + formatIP(b) },
 	OptionLogServer:      func(b []byte) string { return "syslog=" + formatIP(b) },
 	OptionUUIDGUID:       func(b []byte) string { return "uuid=" + formatUUID(b[1:]) },
-	OptionVendorSpecific: func(b []byte) string { return "vendor-specific=" + formatHex(b) },
-	OptionClassID:        func(b []byte) string { return fmt.Sprintf("class-id=%q", b) },
-	OptionClientSystem:   func(b []byte) string { return fmt.Sprintf("client-arch=%d", binary.BigEndian.Uint16(b)) },
+	OptionVendorSpecific: func(b []byte) string { return "vendor_specific=" + formatHex(b) },
+	OptionClassID:        func(b []byte) string { return fmt.Sprintf("class_id=%q", b) },
+	OptionClientSystem:   func(b []byte) string { return fmt.Sprintf("client_arch=%d", binary.BigEndian.Uint16(b)) },
 	OptionDHCPMessage:    func(b []byte) string { return fmt.Sprintf("msg=%q", b) },
-	OptionUserClass:      func(b []byte) string { return fmt.Sprintf("user-class=%q", b) },
+	OptionUserClass:      func(b []byte) string { return fmt.Sprintf("user_class=%q", b) },
 }
 
 func SetOptionFormatter(o Option, fn func([]byte) string) {
@@ -94,13 +94,13 @@ type serverRecv struct {
 
 func (sr *serverRecv) String() string {
 	buf := new(bytes.Buffer)
-	buf.WriteString("event=recv mac=")
+	buf.WriteString(`event=recv mac="`)
 	buf.WriteString(sr.msg.GetCHAddr().String())
 
 	if sr.msg.GetGIAddr().Equal(sr.ip) {
-		buf.WriteString(" via=")
+		buf.WriteString(`" via=`)
 	} else {
-		buf.WriteString(" src=")
+		buf.WriteString(`" src=`)
 	}
 	buf.WriteString(sr.ip.String())
 
@@ -123,13 +123,13 @@ type serverSend struct {
 
 func (ss *serverSend) String() string {
 	buf := new(bytes.Buffer)
-	buf.WriteString("event=send mac=")
+	buf.WriteString(`event=send mac="`)
 	buf.WriteString(ss.req.GetCHAddr().String())
 
 	if ss.req.GetGIAddr().Equal(ss.ip) {
-		buf.WriteString(" via=")
+		buf.WriteString(`" via=`)
 	} else {
-		buf.WriteString(" dst=")
+		buf.WriteString(`" dst="`)
 	}
 	buf.WriteString(ss.ip.String())
 
@@ -160,7 +160,7 @@ func writePacketInfo(buf *bytes.Buffer, p *Packet) {
 	}
 
 	if addr := p.GetSIAddr(); !net.IPv4zero.Equal(addr) {
-		buf.WriteString(" next-server=")
+		buf.WriteString(" next_server=")
 		buf.WriteString(addr.String())
 	}
 
