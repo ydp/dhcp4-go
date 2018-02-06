@@ -129,7 +129,7 @@ func (ss *serverSend) String() string {
 	if ss.req.GetGIAddr().Equal(ss.ip) {
 		buf.WriteString(`" via=`)
 	} else {
-		buf.WriteString(`" dst="`)
+		buf.WriteString(" dst=")
 	}
 	buf.WriteString(ss.ip.String())
 
