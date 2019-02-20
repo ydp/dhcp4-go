@@ -1,7 +1,6 @@
 package dhcp4
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"net"
@@ -17,29 +16,29 @@ func Init(l log.Logger) {
 	dlog = l.Package("dhcp")
 }
 
-var optionFormats = map[Option]func([]byte) string{
+var optionFormats = map[Option]func([]byte) (string, string){
 	OptionDHCPMsgType:    nil,
 	OptionDHCPMaxMsgSize: nil, // func(b []byte) string { return fmt.Sprintf("max_msg_size=%d", binary.BigEndian.Uint16(b)) },
 	OptionParameterList:  nil, // func(b []byte) string { return "param_list=..." }
-	OptionClientID:       func(b []byte) string { return "client_id=" + formatHex(b) },
-	OptionClientNDI:      func(b []byte) string { return "client_ndi=" + formatNDI(b) },
-	OptionDHCPServerID:   func(b []byte) string { return "dhcp_server=" + net.IP(b).String() },
-	OptionDomainServer:   func(b []byte) string { return "dns=" + formatIP(b) },
-	OptionHostname:       func(b []byte) string { return "hostname=" + string(b) },
-	OptionAddressRequest: func(b []byte) string { return "requested_ip=" + net.IP(b).String() },
-	OptionAddressTime:    func(b []byte) string { return "lease_time=" + formatSeconds(b) },
-	OptionSubnetMask:     func(b []byte) string { return "netmask=" + net.IP(b).String() },
-	OptionRouter:         func(b []byte) string { return "routers=" + formatIP(b) },
-	OptionLogServer:      func(b []byte) string { return "syslog=" + formatIP(b) },
-	OptionUUIDGUID:       func(b []byte) string { return "uuid=" + formatUUID(b[1:]) },
-	OptionVendorSpecific: func(b []byte) string { return "vendor_specific=" + formatHex(b) },
-	OptionClassID:        func(b []byte) string { return fmt.Sprintf("class_id=%q", b) },
-	OptionClientSystem:   func(b []byte) string { return fmt.Sprintf("client_arch=%d", binary.BigEndian.Uint16(b)) },
-	OptionDHCPMessage:    func(b []byte) string { return fmt.Sprintf("msg=%q", b) },
-	OptionUserClass:      func(b []byte) string { return fmt.Sprintf("user_class=%q", b) },
+	OptionClientID:       func(b []byte) (string, string) { return "client_id", formatHex(b) },
+	OptionClientNDI:      func(b []byte) (string, string) { return "client_ndi", formatNDI(b) },
+	OptionDHCPServerID:   func(b []byte) (string, string) { return "dhcp_server", net.IP(b).String() },
+	OptionDomainServer:   func(b []byte) (string, string) { return "dns", formatIP(b) },
+	OptionHostname:       func(b []byte) (string, string) { return "hostname", string(b) },
+	OptionAddressRequest: func(b []byte) (string, string) { return "requested_ip", net.IP(b).String() },
+	OptionAddressTime:    func(b []byte) (string, string) { return "lease_time", formatSeconds(b) },
+	OptionSubnetMask:     func(b []byte) (string, string) { return "netmask", net.IP(b).String() },
+	OptionRouter:         func(b []byte) (string, string) { return "routers", formatIP(b) },
+	OptionLogServer:      func(b []byte) (string, string) { return "syslog", formatIP(b) },
+	OptionUUIDGUID:       func(b []byte) (string, string) { return "uuid", formatUUID(b[1:]) },
+	OptionVendorSpecific: func(b []byte) (string, string) { return "vendor_specific", formatHex(b) },
+	OptionClassID:        func(b []byte) (string, string) { return "class_id", fmt.Sprintf("%q", b) },
+	OptionClientSystem:   func(b []byte) (string, string) { return "client_arch", fmt.Sprintf("%d", binary.BigEndian.Uint16(b)) },
+	OptionDHCPMessage:    func(b []byte) (string, string) { return "msg", fmt.Sprintf("%q", b) },
+	OptionUserClass:      func(b []byte) (string, string) { return "user_class", fmt.Sprintf("%q", b) },
 }
 
-func SetOptionFormatter(o Option, fn func([]byte) string) {
+func SetOptionFormatter(o Option, fn func([]byte) (string, string)) {
 	optionFormats[o] = fn
 }
 
@@ -90,98 +89,72 @@ func formatUUID(b []byte) string {
 	return fmt.Sprintf("%08x-%04x-%04x-%04x-%12x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }
 
-type serverReceiveSend struct {
-	event   string
-	req     *Packet
-	rep     *Packet
-	ip      net.IP
-	ifindex int
-}
-
-func (ssr *serverReceiveSend) String() string {
-	buf := new(bytes.Buffer)
-
-	buf.WriteString("event=")
-	buf.WriteString(ssr.event)
-
-	buf.WriteString(` mac="`)
-	buf.WriteString(ssr.req.GetCHAddr().String())
-	buf.WriteString(`"`)
-
-	if ssr.req.GetGIAddr().Equal(ssr.ip) {
-		buf.WriteString(" via=")
-	} else {
-		srcOrDst := " src="
-		if ssr.rep != nil {
-			srcOrDst = " dst="
-		}
-		buf.WriteString(srcOrDst)
+func getPacketFields(p *Packet) []interface{} {
+	fields := []interface{}{
+		"xid", formatHex(p.XID()),
+		"type", p.GetMessageType(),
 	}
-	buf.WriteString(ssr.ip.String())
-
-	if iface, err := net.InterfaceByIndex(ssr.ifindex); err == nil {
-		buf.WriteString(" iface=")
-		buf.WriteString(iface.Name)
-	}
-
-	if ssr.rep == nil {
-		writePacketInfo(buf, ssr.req)
-	} else {
-		writePacketInfo(buf, ssr.rep)
-	}
-
-	return buf.String()
-}
-
-func writePacketInfo(buf *bytes.Buffer, p *Packet) {
-	buf.WriteString(" xid=")
-	buf.WriteString(formatHex(p.XID()))
-
-	buf.WriteString(" type=")
-	buf.WriteString(p.GetMessageType().String())
 
 	if addr := p.GetYIAddr(); !net.IPv4zero.Equal(addr) {
-		buf.WriteString(" address=")
-		buf.WriteString(addr.String())
+		fields = append(fields, "address", addr)
 	}
 
 	if secs := binary.BigEndian.Uint16(p.Secs()); secs > 0 {
-		fmt.Fprintf(buf, " secs=%d", secs)
+		fields = append(fields, "secs", secs)
 	}
 
 	if addr := p.GetSIAddr(); !net.IPv4zero.Equal(addr) {
-		buf.WriteString(" next_server=")
-		buf.WriteString(addr.String())
+		fields = append(fields, "next_server", addr)
 	}
 
-	if filename := nulTerminated(p.File()); len(filename) > 0 {
-		buf.WriteString(" filename=")
-		buf.Write(filename)
+	if filename := p.File(); len(filename) > 0 {
+		fields = append(fields, "filename", string(filename))
 	}
 
-	writeOptions(buf, p.OptionMap)
+	return append(fields, optionFields(p.OptionMap)...)
 }
 
-func nulTerminated(b []byte) []byte {
-	if i := bytes.IndexByte(b, 0); i != -1 {
-		return b[:i]
-	}
-	return b
-}
-
-func writeOptions(buf *bytes.Buffer, om OptionMap) {
+func optionFields(om OptionMap) []interface{} {
+	fields := []interface{}{}
 	for _, o := range om.GetSortedOptions() {
 		fn, ok := optionFormats[o]
 		if !ok {
-			fmt.Fprintf(buf, " option(%d)=%q", o, om[o])
+			fields = append(fields, fmt.Sprintf("option(%d)", o), om[o])
 			continue
 		}
 		if fn == nil {
 			continue
 		}
-		if s := fn(om[o]); s != "" {
-			buf.WriteByte(' ')
-			buf.WriteString(s)
+		if k, v := fn(om[o]); k != "" {
+			fields = append(fields, k, v)
 		}
+	}
+	return fields
+}
+
+func toFields(event string, ifindex int, ip net.IP, req, resp *Packet) []interface{} {
+	var gi string
+	if req.GetGIAddr().Equal(ip) {
+		gi = "via"
+	} else {
+		gi = "src"
+		if resp != nil {
+			gi = "dst"
+		}
+	}
+	fields := []interface{}{
+		"event", event,
+		"mac", req.GetCHAddr(),
+		gi, ip,
+	}
+
+	if iface, err := net.InterfaceByIndex(ifindex); err == nil {
+		fields = append(fields, "iface", iface.Name)
+	}
+
+	if resp == nil {
+		return append(fields, getPacketFields(req)...)
+	} else {
+		return append(fields, getPacketFields(resp)...)
 	}
 }
