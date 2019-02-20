@@ -8,10 +8,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/pkg/capnslog"
+	"github.com/packethost/pkg/log"
 )
 
-var clog = capnslog.NewPackageLogger("github.com/betawaffle/dhcp4-go", "dhcp")
+var dlog log.Logger
+
+func Init(l log.Logger) {
+	dlog = l.Package("dhcp")
+}
 
 var optionFormats = map[Option]func([]byte) string{
 	OptionDHCPMsgType:    nil,
