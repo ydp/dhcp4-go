@@ -49,7 +49,7 @@ func (rw *replyWriter) WriteReply(r Reply) error {
 	var (
 		msg  = r.Message()
 		addr = rw.addr
-		send = &serverSend{req: msg, rep: r.Reply(), ifindex: rw.ifindex}
+		send = &serverReceiveSend{event: "send", req: msg, rep: r.Reply(), ifindex: rw.ifindex}
 	)
 	if ip := msg.GetGIAddr(); ip != nil && !ip.Equal(net.IPv4zero) {
 		addr.IP = ip
@@ -104,7 +104,7 @@ func Serve(pc PacketConn, h Handler) error {
 		}
 
 		a := addr.(*net.UDPAddr)
-		dlog.Debug(&serverRecv{msg: &p, ip: a.IP, ifindex: ifindex})
+		dlog.Debug(&serverReceiveSend{event: "recv", req: &p, ip: a.IP, ifindex: ifindex})
 
 		var rw ReplyWriter
 		switch p.GetMessageType() {

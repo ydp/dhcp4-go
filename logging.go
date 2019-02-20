@@ -90,67 +90,45 @@ func formatUUID(b []byte) string {
 	return fmt.Sprintf("%08x-%04x-%04x-%04x-%12x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }
 
-type serverRecv struct {
-	msg     *Packet
-	ip      net.IP
-	ifindex int
-}
-
-func (sr *serverRecv) String() string {
-	buf := new(bytes.Buffer)
-
-	buf.WriteString("event=recv")
-
-	buf.WriteString(` mac="`)
-	buf.WriteString(sr.msg.GetCHAddr().String())
-	buf.WriteString(`"`)
-
-	if sr.msg.GetGIAddr().Equal(sr.ip) {
-		buf.WriteString(" via=")
-	} else {
-		buf.WriteString(" src=")
-	}
-	buf.WriteString(sr.ip.String())
-
-	if iface, err := net.InterfaceByIndex(sr.ifindex); err == nil {
-		buf.WriteString(" iface=")
-		buf.WriteString(iface.Name)
-	}
-
-	writePacketInfo(buf, sr.msg)
-
-	return buf.String()
-}
-
-type serverSend struct {
+type serverReceiveSend struct {
+	event   string
 	req     *Packet
 	rep     *Packet
 	ip      net.IP
 	ifindex int
 }
 
-func (ss *serverSend) String() string {
+func (ssr *serverReceiveSend) String() string {
 	buf := new(bytes.Buffer)
 
-	buf.WriteString("event=send")
+	buf.WriteString("event=")
+	buf.WriteString(ssr.event)
 
 	buf.WriteString(` mac="`)
-	buf.WriteString(ss.req.GetCHAddr().String())
+	buf.WriteString(ssr.req.GetCHAddr().String())
 	buf.WriteString(`"`)
 
-	if ss.req.GetGIAddr().Equal(ss.ip) {
+	if ssr.req.GetGIAddr().Equal(ssr.ip) {
 		buf.WriteString(" via=")
 	} else {
-		buf.WriteString(" dst=")
+		srcOrDst := " src="
+		if ssr.rep != nil {
+			srcOrDst = " dst="
+		}
+		buf.WriteString(srcOrDst)
 	}
-	buf.WriteString(ss.ip.String())
+	buf.WriteString(ssr.ip.String())
 
-	if iface, err := net.InterfaceByIndex(ss.ifindex); err == nil {
+	if iface, err := net.InterfaceByIndex(ssr.ifindex); err == nil {
 		buf.WriteString(" iface=")
 		buf.WriteString(iface.Name)
 	}
 
-	writePacketInfo(buf, ss.rep)
+	if ssr.rep == nil {
+		writePacketInfo(buf, ssr.req)
+	} else {
+		writePacketInfo(buf, ssr.rep)
+	}
 
 	return buf.String()
 }
