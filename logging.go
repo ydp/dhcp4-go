@@ -16,29 +16,31 @@ func Init(l log.Logger) {
 	dlog = l.Package("dhcp")
 }
 
-var optionFormats = map[Option]func([]byte) (string, string){
+var optionFormats = map[Option]func([]byte) []interface{}{
 	OptionDHCPMsgType:    nil,
 	OptionDHCPMaxMsgSize: nil, // func(b []byte) string { return fmt.Sprintf("max_msg_size=%d", binary.BigEndian.Uint16(b)) },
 	OptionParameterList:  nil, // func(b []byte) string { return "param_list=..." }
-	OptionClientID:       func(b []byte) (string, string) { return "client_id", formatHex(b) },
-	OptionClientNDI:      func(b []byte) (string, string) { return "client_ndi", formatNDI(b) },
-	OptionDHCPServerID:   func(b []byte) (string, string) { return "dhcp_server", net.IP(b).String() },
-	OptionDomainServer:   func(b []byte) (string, string) { return "dns", formatIP(b) },
-	OptionHostname:       func(b []byte) (string, string) { return "hostname", string(b) },
-	OptionAddressRequest: func(b []byte) (string, string) { return "requested_ip", net.IP(b).String() },
-	OptionAddressTime:    func(b []byte) (string, string) { return "lease_time", formatSeconds(b) },
-	OptionSubnetMask:     func(b []byte) (string, string) { return "netmask", net.IP(b).String() },
-	OptionRouter:         func(b []byte) (string, string) { return "routers", formatIP(b) },
-	OptionLogServer:      func(b []byte) (string, string) { return "syslog", formatIP(b) },
-	OptionUUIDGUID:       func(b []byte) (string, string) { return "uuid", formatUUID(b[1:]) },
-	OptionVendorSpecific: func(b []byte) (string, string) { return "vendor_specific", formatHex(b) },
-	OptionClassID:        func(b []byte) (string, string) { return "class_id", fmt.Sprintf("%q", b) },
-	OptionClientSystem:   func(b []byte) (string, string) { return "client_arch", fmt.Sprintf("%d", binary.BigEndian.Uint16(b)) },
-	OptionDHCPMessage:    func(b []byte) (string, string) { return "msg", fmt.Sprintf("%q", b) },
-	OptionUserClass:      func(b []byte) (string, string) { return "user_class", fmt.Sprintf("%q", b) },
+	OptionClientID:       func(b []byte) []interface{} { return []interface{}{"client_id", formatHex(b)} },
+	OptionClientNDI:      func(b []byte) []interface{} { return []interface{}{"client_ndi", formatNDI(b)} },
+	OptionDHCPServerID:   func(b []byte) []interface{} { return []interface{}{"dhcp_server", net.IP(b).String()} },
+	OptionDomainServer:   func(b []byte) []interface{} { return []interface{}{"dns", formatIP(b)} },
+	OptionHostname:       func(b []byte) []interface{} { return []interface{}{"hostname", string(b)} },
+	OptionAddressRequest: func(b []byte) []interface{} { return []interface{}{"requested_ip", net.IP(b).String()} },
+	OptionAddressTime:    func(b []byte) []interface{} { return []interface{}{"lease_time", formatSeconds(b)} },
+	OptionSubnetMask:     func(b []byte) []interface{} { return []interface{}{"netmask", net.IP(b).String()} },
+	OptionRouter:         func(b []byte) []interface{} { return []interface{}{"routers", formatIP(b)} },
+	OptionLogServer:      func(b []byte) []interface{} { return []interface{}{"syslog", formatIP(b)} },
+	OptionUUIDGUID:       func(b []byte) []interface{} { return []interface{}{"uuid", formatUUID(b[1:])} },
+	OptionVendorSpecific: func(b []byte) []interface{} { return []interface{}{"vendor_specific", formatHex(b)} },
+	OptionClassID:        func(b []byte) []interface{} { return []interface{}{"class_id", fmt.Sprintf("%q", b)} },
+	OptionClientSystem: func(b []byte) []interface{} {
+		return []interface{}{"client_arch", fmt.Sprintf("%d", binary.BigEndian.Uint16(b))}
+	},
+	OptionDHCPMessage: func(b []byte) []interface{} { return []interface{}{"msg", fmt.Sprintf("%q", b)} },
+	OptionUserClass:   func(b []byte) []interface{} { return []interface{}{"user_class", fmt.Sprintf("%q", b)} },
 }
 
-func SetOptionFormatter(o Option, fn func([]byte) (string, string)) {
+func SetOptionFormatter(o Option, fn func([]byte) []interface{}) {
 	optionFormats[o] = fn
 }
 
@@ -125,8 +127,9 @@ func optionFields(om OptionMap) []interface{} {
 		if fn == nil {
 			continue
 		}
-		if k, v := fn(om[o]); k != "" {
-			fields = append(fields, k, v)
+
+		if fields := fn(om[o]); fields != nil {
+			fields = append(fields, fields...)
 		}
 	}
 	return fields
