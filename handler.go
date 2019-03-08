@@ -58,7 +58,7 @@ func (rw *replyWriter) WriteReply(r Reply) error {
 		addr.IP = net.IPv4bcast
 	}
 
-	dlog.With(toFields("send", rw.ifindex, addr.IP, msg, r.Reply())).Info()
+	dlog.With(toFields("send", rw.ifindex, addr.IP, msg, r.Reply())...).Info()
 
 	_, err = rw.pw.WriteTo(bytes, &addr, rw.ifindex)
 	return err
@@ -102,7 +102,7 @@ func Serve(pc PacketConn, h Handler) error {
 		}
 
 		a := addr.(*net.UDPAddr)
-		dlog.With(toFields("recv", ifindex, a.IP, &p, nil)).Info()
+		dlog.With(toFields("recv", ifindex, a.IP, &p, nil)...).Info()
 
 		var rw ReplyWriter
 		switch p.GetMessageType() {
