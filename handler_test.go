@@ -4,11 +4,28 @@ import (
 	"errors"
 	"io"
 	"net"
+	"os"
 	"testing"
 
+	"github.com/packethost/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+func TestMain(m *testing.M) {
+	os.Setenv("PACKET_ENV", "test")
+	os.Setenv("PACKET_VERSION", "0")
+	os.Setenv("ROLLBAR_DISABLE", "1")
+	os.Setenv("ROLLBAR_TOKEN", "1")
+
+	log, cleanup, err := log.Init("testing")
+	if err != nil {
+		panic(err)
+	}
+	defer cleanup()
+	Init(log)
+	os.Exit(m.Run())
+}
 
 type testPacketConn struct {
 	mock.Mock
