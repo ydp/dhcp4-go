@@ -1,6 +1,7 @@
 package dhcp4
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"net"
@@ -110,7 +111,13 @@ func getPacketFields(p *Packet) []interface{} {
 	}
 
 	if filename := p.File(); len(filename) > 0 {
-		fields = append(fields, "filename", string(filename))
+		index := bytes.Index(filename, []byte{0})
+		if index != 0 {
+			if index == -1 {
+				index = len(filename)
+			}
+			fields = append(fields, "filename", string(filename[:index]))
+		}
 	}
 
 	return append(fields, optionFields(p.OptionMap)...)
