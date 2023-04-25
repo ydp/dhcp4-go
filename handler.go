@@ -1,6 +1,7 @@
 package dhcp4
 
 import (
+	"fmt"
 	"net"
 
 	"golang.org/x/net/ipv4"
@@ -58,7 +59,7 @@ func (rw *replyWriter) WriteReply(r Reply) error {
 		addr.IP = net.IPv4bcast
 	}
 
-	dlog.With(toFields("send", rw.ifindex, addr.IP, msg, r.Reply())...).Info()
+	// dlog.With(toFields("send", rw.ifindex, addr.IP, msg, r.Reply())...).Debug()
 
 	_, err = rw.pw.WriteTo(bytes, &addr, rw.ifindex)
 	return err
@@ -91,18 +92,19 @@ func Serve(pc PacketConn, h Handler) error {
 
 		p, err := PacketFromBytes(buf[:n])
 		if err != nil {
-			dlog.With("error", err).Info()
+			// dlog.With("error", err).Info()
+			fmt.Println("error", err)
 			continue
 		}
 
 		// Filter everything but requests
 		if op := OpCode(p.Op()[0]); op != BootRequest {
-			dlog.With("op", op, "mac", p.GetCHAddr()).Info("ignoring")
+			// dlog.With("op", op, "mac", p.GetCHAddr()).Info("ignoring")
 			continue
 		}
 
 		a := addr.(*net.UDPAddr)
-		dlog.With(toFields("recv", ifindex, a.IP, &p, nil)...).Info()
+		// dlog.With(toFields("recv", ifindex, a.IP, &p, nil)...).Debug()
 
 		var rw ReplyWriter
 		switch p.GetMessageType() {

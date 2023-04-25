@@ -8,14 +8,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/packethost/pkg/log"
+	// "github.com/packethost/pkg/log"
 )
 
-var dlog log.Logger
+// var dlog log.Logger
 
-func Init(l log.Logger) {
-	dlog = l.Package("dhcp")
-}
+// func Init(l log.Logger) {
+//	dlog = l.Package("dhcp")
+// }
 
 var optionFormats = map[Option]func([]byte) []interface{}{
 	OptionDHCPMsgType:    nil,
